@@ -238,7 +238,7 @@ pub struct CampusTimeline {
 #[serde(rename_all = "camelCase")]
 pub struct CampusTimelineEvent {
     pub start: String,
-    pub end: String,
+    pub end: Option<String>,
     pub duration_event: Option<bool>,
     pub color: String,
     pub title: String,

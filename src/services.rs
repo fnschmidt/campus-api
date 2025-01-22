@@ -438,7 +438,7 @@ fn events_by_color(color: &str, events: &[CampusTimelineEvent]) -> Vec<ExportTim
                 .replace("</strong>", ""),
             color: event.color.clone(),
             start: campusdate_to_iso8601(&event.start),
-            end: campusdate_to_iso8601(&event.end),
+            end: campusdate_to_iso8601(event.end.as_ref().unwrap_or(&event.start)),
         })
         .collect()
 }

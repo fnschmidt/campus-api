@@ -94,7 +94,7 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
             .ects_el
             .text()
             .next()
-            .unwrap()
+            .unwrap_or_default()
             .trim_start()
             .parse::<i32>()
             .unwrap_or_default();
@@ -252,7 +252,13 @@ pub async fn extract_exam_signup_options(html_text: String) -> Result<Vec<Campus
 
         let name = content.next().unwrap().text().next().unwrap().to_string();
         let verfahren = content.next().unwrap().text().next().unwrap().to_string();
-        let pruefart = content.next().unwrap().text().next().unwrap().to_string();
+        let pruefart = content
+            .next()
+            .unwrap()
+            .text()
+            .next()
+            .unwrap_or_default()
+            .to_string();
 
         let subline_selector = &Selector::parse(&format!(".child-of-{l_id}")).unwrap();
         let mut sublines = table.select(subline_selector);
