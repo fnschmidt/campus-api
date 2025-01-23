@@ -940,6 +940,24 @@ pub async fn get_examsignup(
                 perid: "".to_string(),
                 offerno: "".to_string(),
             }),
+        });
+        signup_options.push(CampusDualSignupOption {
+            name: "P1 Servers. Techn. u. vert. Systeme (SE) (5CS-STDS-02)".to_string(),
+            verfahren: "SEP".to_string(),
+            pruefart: "Sommersemester".to_string(),
+            status: "📝".to_string(),
+            signup_information: "Prüfungsart: MPMA".to_string(),
+            exam_date: Some("33.12.2024".to_string()),
+            exam_time: Some("12:34".to_string()),
+            exam_room: Some("Ort: 5SR 104".to_string()),
+            warning_message: Some("Anmeldung ist nur noch bis morgen möglich.".to_string()),
+            signup_until: Some("31.12.2024".to_string()),
+            internal_metadata: Some(ExamRegistrationMetadata {
+                assessment: "".to_string(),
+                peryr: "".to_string(),
+                perid: "".to_string(),
+                offerno: "".to_string(),
+            }),
         })
     }
     signup_options.push(CampusDualSignupOption {
@@ -1032,6 +1050,25 @@ pub async fn get_examverfahren(
             status: "📝".to_string(),
             signup_information: "Prüfungsart: MPMA".to_string(),
             exam_date: Some("32.12.2024".to_string()),
+            exam_time: Some("12:34".to_string()),
+            exam_room: Some("Ort: 5SR 104".to_string()),
+            warning_message: Some("Abmeldung ist nur noch bis morgen möglich.".to_string()),
+            signoff_until: Some("31.12.2024".to_string()),
+            internal_metadata: Some(ExamRegistrationMetadata {
+                assessment: "".to_string(),
+                peryr: "".to_string(),
+                perid: "".to_string(),
+                offerno: "".to_string(),
+            }),
+        });
+
+        signup_verfahren.push(CampusDualVerfahrenOption {
+            name: "P1 Servers. Techn. u. vert. Systeme (SE) (5CS-STDS-02)".to_string(),
+            verfahren: "SEP".to_string(),
+            pruefart: "Sommersemester".to_string(),
+            status: "📝".to_string(),
+            signup_information: "Prüfungsart: MPMA".to_string(),
+            exam_date: Some("33.12.2024".to_string()),
             exam_time: Some("12:34".to_string()),
             exam_room: Some("Ort: 5SR 104".to_string()),
             warning_message: Some("Abmeldung ist nur noch bis morgen möglich.".to_string()),
