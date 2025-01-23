@@ -46,12 +46,20 @@ pub fn decrypt(nonce: &str, ciphertext: &str) -> Result<String> {
 }
 
 pub fn get_aes_from_env() -> [u8; 32] {
-    let key = env::var("AES_KEY").expect("AES_KEY environment variable not set");
-
-    if key.len() < 32 {
-        eprintln!("Error: AES_KEY must be at least 32 bytes long.");
-        std::process::exit(1);
-    }
+    let key = match env::var("AES_KEY") {
+        Err(_) => {
+            log::error!("Environment variable AES_KEY is missing");
+            std::process::exit(1);
+        }
+        Ok(key) => {
+            if key.len() < 32 {
+                log::error!("AES_KEY must be at least 32 bytes long.");
+                std::process::exit(1);
+            } else {
+                key
+            }
+        }
+    };
 
     let key_bytes = key.as_bytes();
     let mut key_array = [0u8; 32];
@@ -64,7 +72,14 @@ pub fn get_aes_from_env() -> [u8; 32] {
 }
 
 pub fn get_jwt_keys_from_env() -> (EncodingKey, DecodingKey) {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET environment variable not set");
+    let secret = match env::var("JWT_SECRET") {
+        Err(_) => {
+            log::error!("Environment variable JWT_SECRET is missing");
+            std::process::exit(1);
+        }
+        Ok(key) => key,
+    };
+
     (
         EncodingKey::from_secret(secret.as_ref()),
         DecodingKey::from_secret(secret.as_ref()),

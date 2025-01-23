@@ -237,7 +237,7 @@ pub struct CampusTimeline {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CampusTimelineEvent {
-    pub start: String,
+    pub start: Option<String>,
     pub end: Option<String>,
     pub duration_event: Option<bool>,
     pub color: String,
@@ -337,27 +337,27 @@ pub struct GradeStatsAllStudents {
 
 #[derive(Debug)]
 pub struct GradeResultsTableType<'a> {
-    pub name_el: ElementRef<'a>,
-    pub grade_el: ElementRef<'a>,
-    pub passed_el: ElementRef<'a>,
-    pub ects_el: ElementRef<'a>,
-    pub beurteilung_el: ElementRef<'a>,
-    pub bekanntgabe_el: ElementRef<'a>,
-    pub wiederholung_el: ElementRef<'a>,
-    pub akad_period_el: ElementRef<'a>,
+    pub name_el: Option<ElementRef<'a>>,
+    pub grade_el: Option<ElementRef<'a>>,
+    pub passed_el: Option<ElementRef<'a>>,
+    pub ects_el: Option<ElementRef<'a>>,
+    pub beurteilung_el: Option<ElementRef<'a>>,
+    pub bekanntgabe_el: Option<ElementRef<'a>>,
+    pub wiederholung_el: Option<ElementRef<'a>>,
+    pub akad_period_el: Option<ElementRef<'a>>,
 }
 
 impl<'a> From<&'a mut scraper::element_ref::Select<'a, 'a>> for GradeResultsTableType<'a> {
     fn from(iter: &'a mut scraper::element_ref::Select<'a, 'a>) -> GradeResultsTableType<'a> {
         GradeResultsTableType {
-            name_el: iter.next().unwrap(),
-            grade_el: iter.next().unwrap(),
-            passed_el: iter.next().unwrap(),
-            ects_el: iter.next().unwrap(),
-            beurteilung_el: iter.next().unwrap(),
-            bekanntgabe_el: iter.next().unwrap(),
-            wiederholung_el: iter.next().unwrap(),
-            akad_period_el: iter.next().unwrap(),
+            name_el: iter.next(),
+            grade_el: iter.next(),
+            passed_el: iter.next(),
+            ects_el: iter.next(),
+            beurteilung_el: iter.next(),
+            bekanntgabe_el: iter.next(),
+            wiederholung_el: iter.next(),
+            akad_period_el: iter.next(),
         }
     }
 }

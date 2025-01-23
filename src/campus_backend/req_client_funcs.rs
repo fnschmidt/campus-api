@@ -68,10 +68,13 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
     let mut grades = Vec::new();
 
     let document = Html::parse_document(&html_text);
-    let table = document
-        .select(&TABLE_SEL)
-        .next()
-        .context("CD grades page: #acwork tbody missing")?;
+    let table = match document.select(&TABLE_SEL).next() {
+        Some(table) => table,
+        None => {
+            log::warn!("grades table doesnt exist");
+            return Ok(vec![]);
+        }
+    };
 
     let normal_module_lines = table.select(&NORMAL_MODULE_SEL);
     for line in normal_module_lines {
@@ -82,27 +85,35 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
         let mut content = line.select(&TD_SEL);
         let table_fields = GradeResultsTableType::from(&mut content);
 
-        let name = table_fields.name_el.text().next().unwrap().to_string();
-        let grade = table_fields.grade_el.text().next().unwrap().to_string();
-        let total_passed_el_opt = table_fields.passed_el.select(&IMG_SEL).next();
+        let name = table_fields
+            .name_el
+            .and_then(|el| el.text().next())
+            .unwrap_or("Kein Name")
+            .to_string();
 
-        let total_passed = total_passed_el_opt
-            .as_ref()
-            .map(|passed_el| passed_el.value().attr("src").unwrap().contains("green.png"));
+        let grade = table_fields
+            .grade_el
+            .and_then(|el| el.text().next())
+            .unwrap_or("?")
+            .to_string();
+
+        let total_passed = table_fields
+            .passed_el
+            .and_then(|el| el.select(&IMG_SEL).next())
+            .and_then(|img| img.value().attr("src"))
+            .map(|src| src.contains("green.png"));
 
         let credit_points = table_fields
             .ects_el
-            .text()
-            .next()
-            .unwrap_or_default()
-            .trim_start()
-            .parse::<i32>()
+            .and_then(|el| el.text().next())
+            .map(|text| text.trim_start())
+            .and_then(|trimmed| trimmed.parse::<i32>().ok())
             .unwrap_or_default();
+
         let akad_period = table_fields
             .akad_period_el
-            .text()
-            .next()
-            .unwrap()
+            .and_then(|el| el.text().next())
+            .unwrap_or("nicht vorhanden")
             .to_string();
 
         let mut subgrades: Vec<CampusDualSubGrade> = Vec::new();
@@ -115,40 +126,41 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
             let sub_grade = CampusDualSubGrade {
                 name: sub_table_fields
                     .name_el
-                    .text()
-                    .next()
-                    .unwrap()
-                    .trim_start()
+                    .and_then(|el| el.text().next())
+                    .map(|text| text.trim_start())
+                    .unwrap_or("kein Name")
                     .to_string(),
-                grade: sub_table_fields.grade_el.text().next().unwrap().to_string(),
+
+                grade: sub_table_fields
+                    .grade_el
+                    .and_then(|el| el.text().next())
+                    .unwrap_or("?")
+                    .to_string(),
+
                 passed: sub_table_fields
                     .passed_el
-                    .select(&IMG_SEL)
-                    .next()
-                    .as_ref()
-                    .map(|passed_el| passed_el.value().attr("src").unwrap().contains("green.png")),
+                    .and_then(|el| el.select(&IMG_SEL).next())
+                    .and_then(|img| img.value().attr("src"))
+                    .map(|src| src.contains("green.png")),
+
                 beurteilung: sub_table_fields
                     .beurteilung_el
-                    .text()
-                    .next()
-                    .unwrap()
+                    .and_then(|el| el.text().next())
+                    .unwrap_or("01.01.1970")
                     .to_string(),
                 bekanntgabe: sub_table_fields
                     .bekanntgabe_el
-                    .text()
-                    .next()
-                    .unwrap()
+                    .and_then(|el| el.text().next())
+                    .unwrap_or("01.01.1970")
                     .to_string(),
                 wiederholung: sub_table_fields
                     .wiederholung_el
-                    .text()
-                    .next()
+                    .and_then(|el| el.text().next())
                     .map(|s| s.to_string()),
                 akad_period: sub_table_fields
                     .akad_period_el
-                    .text()
-                    .next()
-                    .unwrap()
+                    .and_then(|el| el.text().next())
+                    .unwrap_or("nicht vorhanden")
                     .to_string(),
                 internal_metadata: grade_subgrade_line.select(&METADATA_SEL).next().and_then(
                     |internal_metadata| {
@@ -180,19 +192,39 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
     for teilpruefung_line in table.select(&TEILPRUEFUNG_SEL) {
         let content_selector = &TD_SEL;
         let mut content = teilpruefung_line.select(content_selector);
-        let name = content.next().unwrap().text().next().unwrap().trim();
-        let grade = content.next().unwrap().text().next().unwrap();
 
-        let total_passed_el_opt = &content.next().unwrap().select(&IMG_SEL).next();
+        let name = content
+            .next()
+            .and_then(|el| el.text().next())
+            .map(|name| name.trim())
+            .unwrap_or("Ohne Name");
 
-        let total_passed = total_passed_el_opt
-            .as_ref()
-            .map(|passed_el| passed_el.value().attr("src").unwrap().contains("green.png"));
-        let beurteilung = content.nth(1).unwrap().text().next().unwrap().to_string();
-        let bekanntgabe = content.next().unwrap().text().next().unwrap().to_string();
+        let grade = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or("?");
 
-        let credit_points = 0;
-        let akad_period = content.nth(1).unwrap().text().next().unwrap().to_string();
+        let total_passed = content
+            .next()
+            .and_then(|el| el.select(&IMG_SEL).next())
+            .and_then(|img| img.value().attr("src"))
+            .map(|src| src.contains("green.png"));
+
+        let beurteilung = content
+            .nth(1)
+            .and_then(|el| el.text().next())
+            .unwrap_or("01.01.1970")
+            .to_string();
+        let bekanntgabe = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or("01.01.1970")
+            .to_string();
+        let akad_period = content
+            .nth(1)
+            .and_then(|el| el.text().next())
+            .unwrap_or("nicht vorhanden")
+            .to_string();
 
         let subgrades = vec![CampusDualSubGrade {
             name: name.to_string(),
@@ -209,7 +241,7 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
             name: name.to_string(),
             grade: grade.to_string(),
             total_passed,
-            credit_points,
+            credit_points: 0,
             akad_period,
             subgrades,
         });
@@ -223,13 +255,18 @@ pub fn extract_grades(html_text: String) -> Result<Vec<CampusDualGrade>> {
 }
 
 fn get_newest_subgrade_date(grade: &CampusDualGrade) -> NaiveDate {
-    let newest_subgrade = grade
-        .subgrades
-        .iter()
-        .max_by(|a, b| a.bekanntgabe.cmp(&b.bekanntgabe))
-        .unwrap();
+    let newest_subgrade = grade.subgrades.iter().max_by(|a, b| {
+        let date_a = NaiveDate::parse_from_str(&a.bekanntgabe, "%d.%m.%Y").unwrap_or_default();
+        let date_b = NaiveDate::parse_from_str(&b.bekanntgabe, "%d.%m.%Y").unwrap_or_default();
 
-    NaiveDate::parse_from_str(&newest_subgrade.bekanntgabe, "%d.%m.%Y").unwrap()
+        date_a.cmp(&date_b)
+    });
+
+    if let Some(subgrade) = newest_subgrade {
+        NaiveDate::parse_from_str(&subgrade.bekanntgabe, "%d.%m.%Y").unwrap_or_default()
+    } else {
+        NaiveDate::default()
+    }
 }
 
 pub async fn extract_exam_signup_options(html_text: String) -> Result<Vec<CampusDualSignupOption>> {
@@ -244,44 +281,61 @@ pub async fn extract_exam_signup_options(html_text: String) -> Result<Vec<Campus
     let mut signup_options = Vec::new();
 
     let document = Html::parse_document(&html_text);
-    let table = document.select(&TABLE_SEL).next().unwrap();
+    let table = match document.select(&TABLE_SEL).next() {
+        Some(table) => table,
+        None => return Ok(vec![]),
+    };
+
     let top_level_lines = table.select(&NORMAL_LINE_SEL);
     for line in top_level_lines {
-        let l_id = line.value().attr("id").unwrap();
+        let l_id = match line.value().attr("id") {
+            None => continue,
+            Some(l_id) => l_id,
+        };
+
         let mut content = line.select(&TD_SEL);
 
-        let name = content.next().unwrap().text().next().unwrap().to_string();
-        let verfahren = content.next().unwrap().text().next().unwrap().to_string();
+        let name = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or("Kein Name")
+            .to_string();
+        let verfahren = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or_default()
+            .to_string();
         let pruefart = content
             .next()
-            .unwrap()
-            .text()
-            .next()
+            .and_then(|el| el.text().next())
             .unwrap_or_default()
             .to_string();
 
         let subline_selector = &Selector::parse(&format!(".child-of-{l_id}")).unwrap();
         let mut sublines = table.select(subline_selector);
-        let main_subline = sublines.next().unwrap();
 
-        let internal_metadata =
-            main_subline
-                .select(&METADATA_SEL)
-                .next()
-                .map(|meta_el| ExamRegistrationMetadata {
-                    assessment: meta_el.value().attr("data-evob_objid").unwrap().to_string(),
-                    peryr: meta_el.value().attr("data-peryr").unwrap().to_string(),
-                    perid: meta_el.value().attr("data-perid").unwrap().to_string(),
-                    offerno: meta_el.value().attr("data-offerno").unwrap().to_string(),
-                });
+        let main_subline = match sublines.next() {
+            Some(line) => line,
+            None => continue,
+        };
+
+        let internal_metadata = main_subline
+            .select(&METADATA_SEL)
+            .next()
+            .and_then(|meta_el| {
+                Some(ExamRegistrationMetadata {
+                    assessment: meta_el.value().attr("data-evob_objid")?.to_string(),
+                    peryr: meta_el.value().attr("data-peryr")?.to_string(),
+                    perid: meta_el.value().attr("data-perid")?.to_string(),
+                    offerno: meta_el.value().attr("data-offerno")?.to_string(),
+                })
+            });
 
         let status_icon_url = main_subline
             .select(&IMG_SEL)
             .next()
-            .unwrap()
-            .value()
-            .attr("src")
-            .unwrap();
+            .and_then(|img| img.value().attr("src"))
+            .unwrap_or_default();
         let status = match status_icon_url {
             "/images/missed.png" => "🚫",
             "/images/yellow.png" => "📝",
@@ -312,7 +366,10 @@ pub async fn extract_exam_signup_options(html_text: String) -> Result<Vec<Campus
             continue;
         }
 
-        let signup_information_messy = main_subline_texts.next().unwrap().trim_start();
+        let signup_information_messy = main_subline_texts
+            .next()
+            .map(|text| text.trim_start())
+            .unwrap_or_default();
         let signup_information =
             if let Some(stripped) = signup_information_messy.strip_suffix(", Prüfungstermin: ") {
                 stripped
@@ -376,15 +433,38 @@ pub async fn extract_exam_verfahren_options(
     let mut signup_options = Vec::new();
 
     let document = Html::parse_document(&html_text);
-    let table = document.select(&TABLE_SEL).next().unwrap();
+    let table = match document.select(&TABLE_SEL).next() {
+        Some(table) => table,
+        None => {
+            log::warn!("extract_exam_verfahren: no table");
+            return Ok(vec![]);
+        }
+    };
+
     let top_level_lines = table.select(&NORMAL_LINE_SEL);
     for line in top_level_lines {
-        let l_id = line.value().attr("id").unwrap();
+        let l_id = match line.value().attr("id") {
+            Some(l_id) => l_id,
+            None => continue,
+        };
+
         let mut content = line.select(&TD_SEL);
 
-        let name = content.next().unwrap().text().next().unwrap().to_string();
-        let verfahren = content.next().unwrap().text().next().unwrap().to_string();
-        let pruefart = content.next().unwrap().text().next().unwrap().to_string();
+        let name = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or("Kein Name")
+            .to_string();
+        let verfahren = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap_or("Kein Name")
+            .to_string();
+        let pruefart = content
+            .next()
+            .and_then(|el| el.text().next())
+            .unwrap()
+            .to_string();
 
         let subline_selector = &Selector::parse(&format!(".child-of-{l_id}")).unwrap();
         let mut sublines = table.select(subline_selector);

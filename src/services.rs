@@ -2,10 +2,7 @@ use axum::{Extension, Json};
 use chrono::DateTime;
 use fnv::FnvHasher;
 use http::StatusCode;
-use std::{
-    hash::{Hash, Hasher},
-    time::Instant,
-};
+use std::hash::{Hash, Hasher};
 
 use crate::{
     auth::sign_in,
@@ -26,11 +23,7 @@ use crate::{
 pub async fn get_grades(
     Extension(cd_auth_data): Extension<CdAuthData>,
 ) -> Result<Json<Vec<CampusDualGrade>>, ResponseError> {
-    let now = Instant::now();
     let client = get_client_with_cd_cookie(true, cd_auth_data.cookie)?;
-    println!("Time to get client: {:.2?}", now.elapsed());
-
-    let now = Instant::now();
 
     let grade_html = client
         .get("https://selfservice.campus-dual.de/acwork/index")
@@ -39,12 +32,8 @@ pub async fn get_grades(
         .error_for_status()?
         .text()
         .await?;
-    println!("get grades req: {:.2?}", now.elapsed());
-
-    let now = Instant::now();
 
     let grades = extract_grades(grade_html)?;
-    println!("extract grades: {:.2?}", now.elapsed());
 
     Ok(Json(grades))
 }
@@ -87,8 +76,6 @@ pub async fn get_gradestats(
 pub async fn check_revive_session(
     Extension(cd_auth_data): Extension<CdAuthData>,
 ) -> Result<Json<Option<LoginResponse>>, ResponseError> {
-    println!("checking session...");
-
     let client = get_client_with_cd_cookie(false, cd_auth_data.cookie)?;
 
     let resp = client
@@ -99,14 +86,13 @@ pub async fn check_revive_session(
     match resp.status().as_u16() {
         // 200 means the old session is not alive anymore
         200 => {
-            println!("session was dead");
             let new_login_response = sign_in(Json(CampusLoginData {
                 username: cd_auth_data.user,
                 password: cd_auth_data.password,
             }))
             .await;
 
-            println!("revive ok?={}", new_login_response.is_ok());
+            log::info!("CaDu auth revive ok?={}", new_login_response.is_ok());
 
             match new_login_response {
                 Ok(Json(login_response)) => Ok(Json(Some(login_response))),
@@ -253,8 +239,6 @@ pub async fn get_ects(
         .error_for_status()?
         .text()
         .await?;
-
-    // todo!();
     Ok(resp)
 }
 
@@ -278,24 +262,14 @@ pub async fn get_fachsem(
 
     // Remove the quotes from the string, parse number
     let whyisthisnecessary = resp.replace('"', "");
-    let number = whyisthisnecessary.trim().parse::<u32>();
+    let number = whyisthisnecessary.trim().parse::<u32>().unwrap_or(1);
 
-    match number {
-        Ok(num) => Ok(num.to_string()),
-        Err(_) => Err(ResponseError {
-            message: "CampusDual returned garbage".to_string(),
-            status_code: http::StatusCode::INTERNAL_SERVER_ERROR,
-        }),
-    }
+    Ok(number.to_string())
 }
 
 pub async fn get_examstats(
     Extension(cd_authdata): Extension<CdAuthData>,
 ) -> Result<Json<CdExamStats>, ResponseError> {
-    // CAMPUSDUAL PIECHART:
-    // daten/partitionen: ['erfolgreich', 0], ['nicht bestanden', 0], ['gebucht', 0]
-    // farben: ["#0070a3", "#4297d7", "#fcbe04"]
-
     let client = get_client_default(true)?;
 
     let user = cd_authdata.user;
@@ -437,15 +411,17 @@ fn events_by_color(color: &str, events: &[CampusTimelineEvent]) -> Vec<ExportTim
                 .replace("<strong>", "")
                 .replace("</strong>", ""),
             color: event.color.clone(),
-            start: campusdate_to_iso8601(&event.start),
-            end: campusdate_to_iso8601(event.end.as_ref().unwrap_or(&event.start)),
+            start: campusdate_to_iso8601(event.start.as_ref()),
+            end: campusdate_to_iso8601(event.end.as_ref()),
         })
         .collect()
 }
 
-fn campusdate_to_iso8601(input: &str) -> String {
+fn campusdate_to_iso8601(input: Option<&String>) -> String {
     let format = "%a, %d %b %Y %H:%M:%S %z";
 
-    let date_time = DateTime::parse_from_str(input, format).expect("Failed to parse date");
-    date_time.to_rfc3339()
+    input
+        .and_then(|input| DateTime::parse_from_str(input, format).ok())
+        .map(|parsed| parsed.to_rfc3339())
+        .unwrap_or("o. D.".to_string())
 }
