@@ -23,7 +23,7 @@ use crate::{
 pub async fn app() -> Router {
     // simulate state by allowing STDs signup
     let shared_state = std::sync::Arc::new(crate::types::SimulatedState {
-        stds_signup_state: std::sync::Mutex::new(false),
+        stds_signup_states: std::sync::Mutex::new((false, false)),
     });
 
     // Bucket rate limiting:

@@ -918,11 +918,11 @@ pub async fn get_examsignup(
     State(state): State<Arc<SimulatedState>>,
     Extension(_): Extension<CdAuthData>,
 ) -> Result<Json<Vec<CampusDualSignupOption>>, ResponseError> {
-    let stds_signup_state = *state.stds_signup_state.lock().unwrap();
+    let stds_signup_state = *state.stds_signup_states.lock().unwrap();
 
     sleep_some().await;
     let mut signup_options = vec![];
-    if !stds_signup_state {
+    if !stds_signup_state.0 {
         signup_options.push(CampusDualSignupOption {
             name: "P1 Servers. Techn. u. vert. Systeme (SE) (5CS-STDS-01)".to_string(),
             verfahren: "SEP".to_string(),
@@ -935,12 +935,14 @@ pub async fn get_examsignup(
             warning_message: Some("Anmeldung ist nur noch bis morgen möglich.".to_string()),
             signup_until: Some("31.12.2024".to_string()),
             internal_metadata: Some(ExamRegistrationMetadata {
-                assessment: "".to_string(),
+                assessment: "fake1".to_string(),
                 peryr: "".to_string(),
                 perid: "".to_string(),
                 offerno: "".to_string(),
             }),
         });
+    };
+    if !stds_signup_state.1 {
         signup_options.push(CampusDualSignupOption {
             name: "P1 Servers. Techn. u. vert. Systeme (SE) (5CS-STDS-02)".to_string(),
             verfahren: "SEP".to_string(),
@@ -953,13 +955,14 @@ pub async fn get_examsignup(
             warning_message: Some("Anmeldung ist nur noch bis morgen möglich.".to_string()),
             signup_until: Some("31.12.2024".to_string()),
             internal_metadata: Some(ExamRegistrationMetadata {
-                assessment: "".to_string(),
+                assessment: "fake2".to_string(),
                 peryr: "".to_string(),
                 perid: "".to_string(),
                 offerno: "".to_string(),
             }),
         })
-    }
+    };
+
     signup_options.push(CampusDualSignupOption {
         name: "P Bachelorarbeit SG Informatik (5CS-BACS-00)".to_string(),
         verfahren: "SEP".to_string(),
@@ -980,10 +983,15 @@ pub async fn get_examsignup(
 pub async fn post_registerexam(
     State(state): State<Arc<SimulatedState>>,
     Extension(_): Extension<CdAuthData>,
-    Json(_): Json<ExamRegistrationMetadata>,
+    Json(meta): Json<ExamRegistrationMetadata>,
 ) -> Result<String, ResponseError> {
     sleep_some().await;
-    *state.stds_signup_state.lock().unwrap() = true;
+    let mut lock = state.stds_signup_states.lock().unwrap();
+    match meta.assessment.as_str() {
+        "fake1" => lock.0 = true,
+        "fake2" => lock.1 = true,
+        _ => unreachable!(),
+    };
     Ok("{}".to_string())
 }
 
@@ -1005,7 +1013,7 @@ pub async fn get_examdetails(
     "EV_EXAMENDTIME": "15:00:00",
     "EV_EXAMORG_TEXT": "KLSR",
     "EV_EXAMORG_LONGTEXT": "Klausur (K)",
-    "EV_INSTRUCTOR": "Prof. Dr. Paar, Nitsch",
+    "EV_INSTRUCTOR": "Prof. Dr. Musterperson",
     "EV_LOCATION_SHORT": "Dresden",
     "EV_LOCATION_STEXT": "Berufsakademie Dresden",
     "EV_OBTYPE_TEXT": "Modulprüfung",
@@ -1027,10 +1035,15 @@ pub async fn get_examdetails(
 pub async fn post_cancelexam(
     State(state): State<Arc<SimulatedState>>,
     Extension(_): Extension<CdAuthData>,
-    Json(_): Json<ExamRegistrationMetadata>,
+    Json(meta): Json<ExamRegistrationMetadata>,
 ) -> Result<String, ResponseError> {
     sleep_some().await;
-    *state.stds_signup_state.lock().unwrap() = false;
+    let mut lock = state.stds_signup_states.lock().unwrap();
+    match meta.assessment.as_str() {
+        "fake1" => lock.0 = false,
+        "fake2" => lock.1 = false,
+        _ => unreachable!(),
+    };
     Ok("{}".to_string())
 }
 
@@ -1038,11 +1051,11 @@ pub async fn get_examverfahren(
     State(state): State<Arc<SimulatedState>>,
     Extension(_): Extension<CdAuthData>,
 ) -> Result<Json<Vec<CampusDualVerfahrenOption>>, ResponseError> {
-    let stds_signup_state = *state.stds_signup_state.lock().unwrap();
+    let stds_signup_state = *state.stds_signup_states.lock().unwrap();
 
     sleep_some().await;
     let mut signup_verfahren = vec![];
-    if stds_signup_state {
+    if stds_signup_state.0 {
         signup_verfahren.push(CampusDualVerfahrenOption {
             name: "P1 Servers. Techn. u. vert. Systeme (SE) (5CS-STDS-01)".to_string(),
             verfahren: "SEP".to_string(),
@@ -1055,13 +1068,14 @@ pub async fn get_examverfahren(
             warning_message: Some("Abmeldung ist nur noch bis morgen möglich.".to_string()),
             signoff_until: Some("31.12.2024".to_string()),
             internal_metadata: Some(ExamRegistrationMetadata {
-                assessment: "".to_string(),
+                assessment: "fake1".to_string(),
                 peryr: "".to_string(),
                 perid: "".to_string(),
                 offerno: "".to_string(),
             }),
         });
-
+    };
+    if stds_signup_state.1 {
         signup_verfahren.push(CampusDualVerfahrenOption {
             name: "P1 Servers. Techn. u. vert. Systeme (SE) (5CS-STDS-02)".to_string(),
             verfahren: "SEP".to_string(),
@@ -1074,7 +1088,7 @@ pub async fn get_examverfahren(
             warning_message: Some("Abmeldung ist nur noch bis morgen möglich.".to_string()),
             signoff_until: Some("31.12.2024".to_string()),
             internal_metadata: Some(ExamRegistrationMetadata {
-                assessment: "".to_string(),
+                assessment: "fake2".to_string(),
                 peryr: "".to_string(),
                 perid: "".to_string(),
                 offerno: "".to_string(),
@@ -1240,9 +1254,9 @@ pub async fn get_reminders(
     Extension(_): Extension<CdAuthData>,
 ) -> Result<Json<CampusReminders>, ResponseError> {
     sleep_some().await;
-    let json = match *state.stds_signup_state.lock().unwrap() {
-        true => {
-            r#"{
+    let lock = *state.stds_signup_states.lock().unwrap();
+    let json = if lock.0 && lock.1 {
+        r#"{
     "ELECTIVES": 0,
     "EXAMS": 0,
     "LATEST": [
@@ -1283,7 +1297,7 @@ pub async fn get_reminders(
             "COMMENT": "Prüfung (SEP)",
             "ENDUZ": "100000",
             "EVDAT": "20240905",
-            "INSTRUCTOR": "Prof. Dr. Paar, Prof. Dr. Siegmund",
+            "INSTRUCTOR": "Prof. Dr. Mustermann, Prof.in Dr.in Musterfrau",
             "LOCATION": "",
             "OBJID": "00000000",
             "ROOM": "",
@@ -1339,7 +1353,7 @@ pub async fn get_reminders(
             "COMMENT": "Prüfung (SEP)",
             "ENDUZ": "000000",
             "EVDAT": "20240926",
-            "INSTRUCTOR": "Prof. Dr. Paar",
+            "INSTRUCTOR": "Prof.in Dr.in Musterfrau",
             "LOCATION": "",
             "OBJID": "00000000",
             "ROOM": "104 Seminarraum",
@@ -1350,9 +1364,8 @@ pub async fn get_reminders(
         }
     ]
 }"#
-        }
-        false => {
-            r#"{
+    } else {
+        r#"{
     "ELECTIVES": 0,
     "EXAMS": 1,
     "LATEST": [
@@ -1393,7 +1406,7 @@ pub async fn get_reminders(
             "COMMENT": "Prüfung (SEP)",
             "ENDUZ": "100000",
             "EVDAT": "20240905",
-            "INSTRUCTOR": "Prof. Dr. Paar, Prof. Dr. Siegmund",
+            "INSTRUCTOR": "Prof. Dr. Mustermann, Prof.in Dr.in Musterfrau",
             "LOCATION": "",
             "OBJID": "00000000",
             "ROOM": "",
@@ -1435,7 +1448,7 @@ pub async fn get_reminders(
             "COMMENT": "Prüfung (SEP)",
             "ENDUZ": "000000",
             "EVDAT": "20240926",
-            "INSTRUCTOR": "Prof. Dr. Paar",
+            "INSTRUCTOR": "Prof. Dr. Mustermann",
             "LOCATION": "",
             "OBJID": "00000000",
             "ROOM": "104 Seminarraum",
@@ -1446,7 +1459,6 @@ pub async fn get_reminders(
         }
     ]
 }"#
-        }
     };
 
     let resp: CampusReminders = serde_json::from_str(json).unwrap();

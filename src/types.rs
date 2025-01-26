@@ -2,7 +2,7 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 pub struct SimulatedState {
-    pub stds_signup_state: std::sync::Mutex<bool>,
+    pub stds_signup_states: std::sync::Mutex<(bool, bool)>,
 }
 
 #[derive(Serialize, Deserialize)]
