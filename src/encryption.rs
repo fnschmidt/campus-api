@@ -11,7 +11,7 @@ use crate::constants::AES_KEY;
 
 fn generate_nonce() -> [u8; 12] {
     let mut nonce = [0u8; 12];
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     rng.fill(&mut nonce);
     nonce
 }
