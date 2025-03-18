@@ -28,7 +28,6 @@ async fn main() {
         pretty_env_logger::init_timed();
     }
 
-    pretty_env_logger::init_timed();
     log::info!("Starting Campus API...");
     log::info!("Rate limit: {}", RATELIMIT_QUOTA.get().unwrap());
     log::info!(
