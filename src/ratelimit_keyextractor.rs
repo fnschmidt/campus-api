@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 
-use http::{request::Request, StatusCode};
+use http::{StatusCode, request::Request};
 use serde::{Deserialize, Serialize};
 use tower_governor::{
     errors::GovernorError,

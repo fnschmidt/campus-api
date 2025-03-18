@@ -8,8 +8,8 @@ use regex::Regex;
 use reqwest::Url;
 use reqwest_cookie_store::CookieStoreMutex;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
-use scraper::{selectable::Selectable, Html, Selector};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
+use scraper::{Html, Selector, selectable::Selectable};
 
 use crate::{
     constants::CD_CERT_PEM,
