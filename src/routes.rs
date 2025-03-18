@@ -1,13 +1,12 @@
 use std::{sync::Arc, time::Duration};
 
 use axum::{
-    middleware,
+    Router, middleware,
     response::IntoResponse,
     routing::{get, post},
-    Router,
 };
-use http::{header::CONTENT_TYPE, Method};
-use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
+use http::{Method, header::CONTENT_TYPE};
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
@@ -53,10 +52,12 @@ pub async fn app() -> Router {
 
     // a separate background task to clean up
     let interval = Duration::from_secs(60);
-    std::thread::spawn(move || loop {
-        std::thread::sleep(interval);
-        governor_limiter_jwt.retain_recent();
-        governor_limiter_signin.retain_recent();
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(interval);
+            governor_limiter_jwt.retain_recent();
+            governor_limiter_signin.retain_recent();
+        }
     });
 
     let cors = CorsLayer::new()

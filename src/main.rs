@@ -1,8 +1,8 @@
 use std::env;
 
 use constants::{
-    set_statics_from_env, CD_CERT_PEM, LOGIN_RATELIMIT_QUOTA, LOGIN_RATELIMIT_RESTORE_INTERVAL_SEC,
-    RATELIMIT_QUOTA, RATELIMIT_RESTORE_INTERVAL_SEC,
+    CD_CERT_PEM, LOGIN_RATELIMIT_QUOTA, LOGIN_RATELIMIT_RESTORE_INTERVAL_SEC, RATELIMIT_QUOTA,
+    RATELIMIT_RESTORE_INTERVAL_SEC, set_statics_from_env,
 };
 use tokio::net::TcpListener;
 
@@ -20,10 +20,13 @@ async fn main() {
     set_statics_from_env();
 
     if env::var(pretty_env_logger::env_logger::DEFAULT_FILTER_ENV).is_err() {
-        env::set_var("RUST_LOG", "info");
+        pretty_env_logger::formatted_timed_builder()
+            .filter_level(log::LevelFilter::Info)
+            .init();
+    } else {
+        pretty_env_logger::init_timed();
     }
 
-    pretty_env_logger::init_timed();
     log::info!("Starting Campus API...");
     log::info!("Rate limit: {}", RATELIMIT_QUOTA.get().unwrap());
     log::info!(

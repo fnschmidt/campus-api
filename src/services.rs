@@ -1,8 +1,7 @@
-use axum::{extract::State, Extension, Json};
+use axum::{Extension, Json, extract::State};
 use chrono::{DateTime, Duration, Utc};
 use fnv::FnvHasher;
-use rand::Rng;
-use tokio::time::{sleep, Duration as TokioDuration};
+use tokio::time::{Duration as TokioDuration, sleep};
 
 use std::{
     hash::{Hash, Hasher},
@@ -20,7 +19,7 @@ use crate::{
 };
 
 pub async fn sleep_some() {
-    let sleep_time = rand::thread_rng().gen_range(200..800);
+    let sleep_time = rand::random_range(200..800);
     sleep(TokioDuration::from_millis(sleep_time)).await;
 }
 
@@ -909,7 +908,6 @@ pub async fn check_revive_session(
     Extension(_): Extension<CdAuthData>,
 ) -> Result<Json<Option<LoginResponse>>, ResponseError> {
     println!("checking session...");
-    sleep_some().await;
 
     Ok(Json(None))
 }

@@ -1,6 +1,6 @@
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use base64::prelude::*;
 use http::StatusCode;
 use jsonwebtoken::{DecodingKey, EncodingKey};
@@ -11,7 +11,7 @@ use crate::constants::AES_KEY;
 
 fn generate_nonce() -> [u8; 12] {
     let mut nonce = [0u8; 12];
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     rng.fill(&mut nonce);
     nonce
 }

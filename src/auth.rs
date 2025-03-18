@@ -8,7 +8,7 @@ use axum::{
 };
 
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, Header, TokenData, Validation};
+use jsonwebtoken::{Header, TokenData, Validation, decode, encode};
 use serde_json::json;
 
 use crate::{
@@ -98,7 +98,7 @@ pub async fn authorize(mut req: Request, next: Next) -> Result<Response<Body>, R
             return Err(ResponseError {
                 message: "JWT token is missing".to_string(),
                 status_code: StatusCode::FORBIDDEN,
-            })
+            });
         }
     };
 
@@ -113,7 +113,7 @@ pub async fn authorize(mut req: Request, next: Next) -> Result<Response<Body>, R
             return Err(ResponseError {
                 message: "Invalid JWT".to_string(),
                 status_code: StatusCode::UNAUTHORIZED,
-            })
+            });
         }
     };
 
