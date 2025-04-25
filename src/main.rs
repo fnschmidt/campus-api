@@ -18,8 +18,6 @@ mod types;
 
 #[tokio::main]
 async fn main() {
-    set_statics_from_env();
-
     if env::var(pretty_env_logger::env_logger::DEFAULT_FILTER_ENV).is_err() {
         pretty_env_logger::formatted_timed_builder()
             .filter_level(log::LevelFilter::Info)
@@ -27,6 +25,8 @@ async fn main() {
     } else {
         pretty_env_logger::init_timed();
     }
+
+    set_statics_from_env();
 
     log::info!("Starting Campus API...");
     log::info!("Rate limit: {}", RATELIMIT_QUOTA.get().unwrap());
