@@ -15,7 +15,7 @@ use crate::{
 pub async fn cdlogin_get_jcookie_and_meta(
     login_data: CampusLoginData,
 ) -> Result<(CdAuthData, UserBasicInfo)> {
-    let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::new(None)));
+    let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::new()));
 
     let client = reqwest::Client::builder()
         .add_root_certificate(CD_CERT_PEM.get().unwrap().clone())

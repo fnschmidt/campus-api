@@ -37,7 +37,7 @@ pub fn get_client_with_cd_cookie(retry: bool, j_cookie: String) -> Result<Client
     let retries = if retry { 2 } else { 0 };
 
     let cookie: cookie_store::Cookie = serde_json::from_str(&j_cookie)?;
-    let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::new(None)));
+    let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::new()));
     {
         let mut store = cookie_store.lock().unwrap();
         store.insert(cookie, &Url::parse("https://campus-dual.de")?)?;

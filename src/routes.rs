@@ -78,16 +78,12 @@ pub async fn app() -> Router {
         .route("/get_reminders", get(services::get_reminders))
         .route("/get_timeline", get(services::get_timeline))
         // apply auth and jwt rate limiting to all previous (jwt is only stored as hash)
-        .layer(GovernorLayer {
-            config: governor_conf_jwt,
-        })
+        .layer(GovernorLayer::new(governor_conf_jwt))
         .layer(middleware::from_fn(auth::authorize))
         // sign in rate limiting (based on username, only stored as hash)
         .route(
             "/signin",
-            post(auth::sign_in).layer(GovernorLayer {
-                config: governor_conf_signin,
-            }),
+            post(auth::sign_in).layer(GovernorLayer::new(governor_conf_signin)),
         )
         .route("/", get(|| async { "API is reachable".into_response() }))
         .layer(cors)

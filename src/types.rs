@@ -9,7 +9,7 @@ pub struct CampusLoginData {
 }
 
 // JWT Claims
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub exp: usize,     // expiration time
     pub iat: usize,     // issued at
