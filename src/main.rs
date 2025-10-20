@@ -40,7 +40,7 @@ async fn main() {
         LOGIN_RATELIMIT_RESTORE_INTERVAL_SEC.get().unwrap()
     );
 
-    let buf = include_bytes!("GEANT_OV_RSA_CA_4_tcs-cert3.pem");
+    let buf = include_bytes!("GEANT TLS RSA 1.pem");
     let cert = reqwest::Certificate::from_pem(buf).unwrap();
     CD_CERT_PEM.set(cert).unwrap();
 

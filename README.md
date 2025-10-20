@@ -8,7 +8,7 @@ While being fairly unopinionated, this API is part of the [**CampusUnbloat**](ht
 * A working Rust toolchain
 * `JWT_SECRET=something AES_KEY=something_32chars cargo run`
 
-the project includes the `GEANT OV RSA CA 4` CA certificate, which is linked into the binary. Trust but verify
+the project includes the `GEANT TLS RSA 1` CA certificate, which is linked into the binary. Trust but verify
 
 ## Using the API
 * $api/signin has to be called with a `POST`-request and a JSON-body like
