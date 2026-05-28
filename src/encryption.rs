@@ -4,7 +4,7 @@ use anyhow::{Result, anyhow};
 use base64::prelude::*;
 use http::StatusCode;
 use jsonwebtoken::{DecodingKey, EncodingKey};
-use rand::Rng;
+use rand::RngExt;
 use std::{env, str};
 
 use crate::constants::AES_KEY;
